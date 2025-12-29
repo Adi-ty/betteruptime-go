@@ -15,5 +15,8 @@ func SetUpRoutes(app *app.Application) *chi.Mux {
 		w.Write([]byte("OK"))
 	})
 
+	router.Get("/website/{id}", app.WebsiteHandler.HandleGetWebsite)
+	router.Post("/website", app.WebsiteHandler.HandleCreateWebsite)
+
 	return router
 }
