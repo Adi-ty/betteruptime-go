@@ -1,19 +1,17 @@
 -- +goose Up
 -- +goose StatementBegin
 
-CREATE TABLE IF NOT EXISTS "Website" (
-    "id" TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS "website" (
+    "id" SERIAL PRIMARY KEY,
     "url" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "Website_pkey" PRIMARY KEY ("id")
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX "Website_url_key" ON "Website"("url");
+CREATE UNIQUE INDEX "website_url_key" ON "website"("url");
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE "Website";
+DROP TABLE "website";
 -- +goose StatementEnd
