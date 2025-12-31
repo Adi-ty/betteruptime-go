@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS "website_tick" (
     "status_code" "website_status" NOT NULL,
     "website_id" INTEGER NOT NULL,
     "region_id" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "website_tick_pkey" PRIMARY KEY ("id")
 );

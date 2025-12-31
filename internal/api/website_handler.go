@@ -6,7 +6,9 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
+	"github.com/Adi-ty/betteruptime-go/internal/middleware"
 	"github.com/Adi-ty/betteruptime-go/internal/store"
 	"github.com/go-chi/chi/v5"
 )
@@ -23,8 +25,8 @@ func NewWebsiteHandler(websiteStore store.WebsiteStore, logger *log.Logger) *Web
 	}
 }
 
-func (h *WebsiteHandler) HandleGetWebsite(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "id")
+func (h *WebsiteHandler) HandleGetWebsiteStatus(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "website_id")
 	if idParam == "" {
 		http.Error(w, "missing id parameter", http.StatusBadRequest)
 		return
@@ -35,7 +37,13 @@ func (h *WebsiteHandler) HandleGetWebsite(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	website, err := h.websiteStore.GetWebsiteByID(id)
+	currentUser := middleware.GetUser(r)
+	if currentUser == nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	website, err := h.websiteStore.GetWebsiteStatusByID(currentUser.ID, id)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to get website: %v", err), http.StatusInternalServerError)
 		return
@@ -51,13 +59,24 @@ func (h *WebsiteHandler) HandleGetWebsite(w http.ResponseWriter, r *http.Request
 
 func (h *WebsiteHandler) HandleCreateWebsite(w http.ResponseWriter, r *http.Request) {
 	var website store.Website
-	err := json.NewDecoder(r.Body).Decode(&website)
+	decoder := json.NewDecoder(r.Body)
+    decoder.DisallowUnknownFields()
+    err := decoder.Decode(&website)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	createdWebsite, err := h.websiteStore.CreateWebsite(&website)
+	currentUser := middleware.GetUser(r)
+	if currentUser == nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	website.UserID = currentUser.ID
+	website.TimeAdded =  time.Now()
+
+	err = h.websiteStore.CreateWebsite(&website)
 	if err != nil {
 		http.Error(w, "Failed to create website", http.StatusInternalServerError)
 		return
@@ -65,5 +84,9 @@ func (h *WebsiteHandler) HandleCreateWebsite(w http.ResponseWriter, r *http.Requ
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(createdWebsite)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"id": website.ID,
+		"url": website.Url,
+		"time_added": website.TimeAdded,
+	})
 }

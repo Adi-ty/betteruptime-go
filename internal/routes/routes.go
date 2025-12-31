@@ -15,8 +15,15 @@ func SetUpRoutes(app *app.Application) *chi.Mux {
 		w.Write([]byte("OK"))
 	})
 
-	router.Get("/website/{id}", app.WebsiteHandler.HandleGetWebsite)
-	router.Post("/website", app.WebsiteHandler.HandleCreateWebsite)
+	router.Group(func (r chi.Router) {
+		r.Use(app.Middleware.Authenticate)
+
+		r.Get("/status/{website_id}", app.WebsiteHandler.HandleGetWebsiteStatus)
+		r.Post("/website", app.WebsiteHandler.HandleCreateWebsite)
+	})
+
+	router.Post("/user/register", app.UserHandler.HandleUserRegister)
+	router.Post("/user/login", app.UserHandler.HandleUserLogin)
 
 	return router
 }
