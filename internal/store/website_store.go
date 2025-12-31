@@ -3,6 +3,8 @@ package store
 import (
 	"database/sql"
 	"time"
+
+	"github.com/Adi-ty/betteruptime-go/internal/stream"
 )
 
 type WebsiteStatus string
@@ -46,6 +48,7 @@ func NewPostgresWebsiteStore(db *sql.DB) *PostgresWebsiteStore {
 type WebsiteStore interface {
 	CreateWebsite(Website *Website) error
 	GetWebsiteStatusByID(userId int64, id int64) (*Website, error)
+	GetAllWebsites() ([]*stream.WebsiteEvent, error)
 }
 
 func (s *PostgresWebsiteStore) CreateWebsite(website *Website) error {
@@ -105,4 +108,29 @@ func (s *PostgresWebsiteStore) GetWebsiteStatusByID(userId int64, id int64) (*We
     }
 
 	return website, nil
+}
+
+func (s *PostgresWebsiteStore) GetAllWebsites() ([]*stream.WebsiteEvent, error) {
+	query := `SELECT id, url FROM "website"`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var websites []*stream.WebsiteEvent
+	for rows.Next() {
+		website := &stream.WebsiteEvent{}
+		err := rows.Scan(&website.ID, &website.Url)
+		if err != nil {
+			return nil, err
+		}
+		websites = append(websites, website)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return websites, nil
 }
