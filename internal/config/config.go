@@ -8,6 +8,8 @@ import (
 type Config struct {
     DB string
     RedisAddr string
+    RegionID string
+    WorkerID string
 }
 
 func Load() (Config, error) {
@@ -21,5 +23,15 @@ func Load() (Config, error) {
         return Config{}, errors.New("REDIS_ADDR is required")
     }
 
-    return Config{DB: v, RedisAddr: redisAddr}, nil
+    regionID := os.Getenv("REGION_ID")
+    if regionID == "" {
+        return Config{}, errors.New("REGION_ID is required")
+    }
+
+    workerID := os.Getenv("WORKER_ID")
+    if workerID == "" {
+        return Config{}, errors.New("WORKER_ID is required")
+    }
+
+    return Config{DB: v, RedisAddr: redisAddr, RegionID: regionID, WorkerID: workerID}, nil
 }

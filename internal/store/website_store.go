@@ -31,7 +31,7 @@ type Website struct {
 
 type WebsiteTick struct {
 	ID             string			`json:"id"`
-	ResponseTimeMs int				`json:"response_time_ms"`
+	ResponseTimeMs int64			`json:"response_time_ms"`
 	StatusCode     WebsiteStatus	`json:"status_code"`
 	WebsiteID      int64		    `json:"website_id"`
 	RegionID       string			`json:"region_id"`
@@ -49,6 +49,7 @@ type WebsiteStore interface {
 	CreateWebsite(Website *Website) error
 	GetWebsiteStatusByID(userId int64, id int64) (*Website, error)
 	GetAllWebsites() ([]*stream.WebsiteEvent, error)
+	MarkWebsiteTickProcessed(websiteTick *WebsiteTick) error
 }
 
 func (s *PostgresWebsiteStore) CreateWebsite(website *Website) error {
@@ -97,7 +98,7 @@ func (s *PostgresWebsiteStore) GetWebsiteStatusByID(userId int64, id int64) (*We
 	if tickID.Valid {
         tick := WebsiteTick{
             ID:             tickID.String,
-            ResponseTimeMs: int(responseTimeMs.Int64),
+            ResponseTimeMs: responseTimeMs.Int64,
             StatusCode:     WebsiteStatus(statusCode.String),
             WebsiteID:      websiteID.Int64,
             RegionID:       regionID.String,
@@ -133,4 +134,14 @@ func (s *PostgresWebsiteStore) GetAllWebsites() ([]*stream.WebsiteEvent, error) 
 	}
 
 	return websites, nil
+}
+
+func (s *PostgresWebsiteStore) MarkWebsiteTickProcessed(websiteTick *WebsiteTick) error {
+	query := `INSERT INTO "website_tick" (id, website_id, region_id, response_time_ms, status_code, created_at) VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := s.db.Exec(query, websiteTick.ID, websiteTick.WebsiteID, websiteTick.RegionID, websiteTick.ResponseTimeMs, websiteTick.StatusCode, time.Now())
+	if err != nil {
+		return err
+	}
+	
+	return nil
 }
